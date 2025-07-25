@@ -2,26 +2,25 @@ import json
 
 import pandas as pd
 from datasets import Dataset
-from hazm import Normalizer
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers.trainer import Trainer
 from transformers.training_args import TrainingArguments
 
-# Load and normalize
-normalizer = Normalizer()
-df = pd.read_csv("ganjoor_poems.csv")  # Dataset with `text`, `meter_label` columns
-df["text"] = df["text"].apply(normalizer.normalize)
+# Load data (hemistichs already normalized)
+# Columns: `hemistich`, `meter_syllables`, `meter_name`, `base_meter`
+df = pd.read_csv("saeb_meters.csv")
 
 print(f"Dataset size: {len(df)}")
-print(f"Number of unique meters: {len(df['meter_label'].unique())}")
-print(f"Class distribution:\n{df['meter_label'].value_counts()}")
-print("\n" + "=" * 50 + "\n")
+print(f"Number of unique meters: {len(df['meter_name'].unique())}")
+print(f"Class distribution:\n{df['meter_name'].value_counts()}")
+print("\n" + "=" * 40 + "\n")
 
 # Map meter labels to ints
-label_list = sorted(df["meter_label"].unique())
+label_list = sorted(df["meter_name"].unique())
 label_map: dict[str, int] = {label: i for i, label in enumerate(label_list)}
-df["label"] = df["meter_label"].replace(label_map)
+print(f"Labels: {list(label_map.keys())[:5]}...")  # Show first 5
+df["label"] = df["meter_name"].replace(label_map)
 
 # Save label mapping
 with open("label_map.json", "w") as f:
@@ -29,13 +28,13 @@ with open("label_map.json", "w") as f:
 print("Label mapping saved to label_map.json")
 
 # HuggingFace Dataset
-subset_df = df[["text", "label"]]
+subset_df = df[["hemistich", "label"]]
 assert isinstance(subset_df, pd.DataFrame)  # To placate Pyright
 dataset = Dataset.from_pandas(subset_df)
 dataset = dataset.train_test_split(test_size=0.1)
 
 # Tokenizer & model
-model_name = "HooshvareLab/bert-base-parsbert-uncased"
+model_name = "FacebookAI/xlm-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(
     model_name, num_labels=len(label_list)
@@ -44,7 +43,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 # Tokenize
 def tokenize(examples):
-    return tokenizer(examples["text"], truncation=True, padding="max_length")
+    return tokenizer(examples["hemistich"], truncation=True, padding="max_length")
 
 
 tokenized = dataset.map(tokenize, batched=True)
