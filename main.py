@@ -20,7 +20,7 @@ print("\n" + "=" * 40 + "\n")
 label_list = sorted(df["meter_name"].unique())
 label_map: dict[str, int] = {label: i for i, label in enumerate(label_list)}
 print(f"Labels: {list(label_map.keys())[:5]}...")  # Show first 5
-df["label"] = df["meter_name"].replace(label_map)
+df["label"] = df["meter_name"].map(label_map)
 
 # Save label mapping
 with open("label_map.json", "w") as f:
@@ -31,7 +31,7 @@ print("Label mapping saved to label_map.json")
 subset_df = df[["hemistich", "label"]]
 assert isinstance(subset_df, pd.DataFrame)  # To placate Pyright
 dataset = Dataset.from_pandas(subset_df)
-dataset = dataset.train_test_split(test_size=0.1)
+dataset = dataset.train_test_split(test_size=0.1, seed=42)
 
 # Tokenizer & model
 model_name = "FacebookAI/xlm-roberta-base"
@@ -52,10 +52,16 @@ tokenized = dataset.map(tokenize, batched=True)
 training_args = TrainingArguments(
     output_dir="./results",
     eval_strategy="epoch",
+    save_strategy="epoch",
     learning_rate=2e-5,
     per_device_train_batch_size=8,
-    num_train_epochs=4,
+    num_train_epochs=3,
     weight_decay=0.01,
+    save_total_limit=3,
+    load_best_model_at_end=True,
+    metric_for_best_model="eval_accuracy",
+    greater_is_better=True,
+    resume_from_checkpoint="./results/checkpoint-35000",
 )
 
 
@@ -63,7 +69,7 @@ def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     predictions = predictions.argmax(axis=-1)
     precision, recall, f1, _ = precision_recall_fscore_support(
-        y_true=labels, y_pred=predictions, average="weighted"
+        y_true=labels, y_pred=predictions, average="weighted", zero_division=0
     )
     acc = accuracy_score(y_true=labels, y_pred=predictions)
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}

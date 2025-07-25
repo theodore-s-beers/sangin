@@ -15,3 +15,5 @@ wheels/
 *.csv
 *.jsonl
 *.log
+
+persian-meter-classifier/
