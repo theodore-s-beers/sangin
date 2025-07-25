@@ -15,9 +15,7 @@ logging.basicConfig(
 
 
 class ShahnamaScraper:
-    def __init__(
-        self, output_file: str = "shahnama_eskandar.jsonl", delay: float = 2.0
-    ):
+    def __init__(self, output_file: str = "shahnama_sohrab.jsonl", delay: float = 2.0):
         self.base_url = "https://api.ganjoor.net/api/ganjoor/poem"
         self.params = {
             "catInfo": "false",
@@ -40,7 +38,7 @@ class ShahnamaScraper:
         )
 
     def get_poem_url_path(self, poem_number: int) -> str:
-        return f"/ferdousi/shahname/eskandar/sh{poem_number}"
+        return f"/ferdousi/shahname/sohrab/sh{poem_number}"
 
     def fetch_poem(self, poem_number: int) -> Optional[dict]:
         url_path = self.get_poem_url_path(poem_number)
@@ -96,7 +94,7 @@ class ShahnamaScraper:
 
         return existing
 
-    def scrape_range(self, start: int = 1, end: int = 47, resume: bool = True) -> None:
+    def scrape_range(self, start: int = 1, end: int = 21, resume: bool = True) -> None:
         existing_poems = self.load_existing_poems() if resume else set()
 
         total_poems = end - start + 1
@@ -137,7 +135,7 @@ class ShahnamaScraper:
 
 def main():
     scraper = ShahnamaScraper()  # Using default parameters
-    scraper.scrape_range(1, 47)
+    scraper.scrape_range(1, 21)
 
 
 if __name__ == "__main__":
