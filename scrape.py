@@ -10,12 +10,12 @@ from requests.exceptions import RequestException
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("saeb_scraper.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("hafez_scraper.log"), logging.StreamHandler()],
 )
 
 
-class SaebScraper:
-    def __init__(self, output_file: str = "saeb_ghazals.jsonl", delay: float = 2.0):
+class HafezScraper:
+    def __init__(self, output_file: str = "hafez_ghazals.jsonl", delay: float = 2.0):
         self.base_url = "https://api.ganjoor.net/api/ganjoor/poem"
         self.params = {
             "catInfo": "false",
@@ -33,12 +33,12 @@ class SaebScraper:
         self.session = requests.Session()
         self.session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (compatible; SaebScraper/1.0; Responsible scraping)"
+                "User-Agent": "Mozilla/5.0 (compatible; HafezScraper/1.0; Responsible scraping)"
             }
         )
 
     def get_poem_url_path(self, poem_number: int) -> str:
-        return f"/saeb/divan-saeb/ghazalkasa/sh{poem_number}"
+        return f"/hafez/ghazal/sh{poem_number}"
 
     def fetch_poem(self, poem_number: int) -> Optional[dict]:
         url_path = self.get_poem_url_path(poem_number)
@@ -94,9 +94,7 @@ class SaebScraper:
 
         return existing
 
-    def scrape_range(
-        self, start: int = 1, end: int = 6995, resume: bool = True
-    ) -> None:
+    def scrape_range(self, start: int = 1, end: int = 495, resume: bool = True) -> None:
         existing_poems = self.load_existing_poems() if resume else set()
 
         total_poems = end - start + 1
@@ -136,8 +134,8 @@ class SaebScraper:
 
 
 def main():
-    scraper = SaebScraper()  # Using default parameters
-    scraper.scrape_range(1, 6995)
+    scraper = HafezScraper()  # Using default parameters
+    scraper.scrape_range(1, 495)
 
 
 if __name__ == "__main__":
