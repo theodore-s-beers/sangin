@@ -1,9 +1,10 @@
 from collections import Counter
+from typing import Any
 
 from infer import PersianMeterClassifier
 
 
-class PoemMeterAnalyzer:
+class MeterAnalyzer:
     def __init__(
         self,
         model_path: str = "./persian-meter-classifier",
@@ -11,79 +12,77 @@ class PoemMeterAnalyzer:
     ):
         self.classifier = PersianMeterClassifier(model_path, label_map_path)
 
-    def analyze_poem(self, hemistichs: list[str]) -> dict:
-        all_predictions = self.classifier.predict(hemistichs, top_k=3)
+    def analyze_meter(
+        self, hemistichs: list[str], conf_threshold: float = 0.95
+    ) -> dict[str, Any]:
+        predictions = self.classifier.predict(hemistichs, top_k=1)
 
-        results = {
-            "hemistichs": hemistichs,
-            "individual_predictions": all_predictions,
-            "analysis": {},
-        }
+        high_conf_meters: list[str] = []
 
-        results["analysis"]["consensus"] = self._consensus_analysis(all_predictions)
+        for hemistich_preds in predictions:
+            meter, confidence = hemistich_preds[0]
+            if confidence >= conf_threshold:
+                high_conf_meters.append(meter)
 
-        return results
-
-    def _consensus_analysis(
-        self, all_predictions: list[list[tuple[str, float]]]
-    ) -> dict:
-        high_confidence_predictions = []
-        confidence_threshold = 0.95
-
-        for hemistich_preds in all_predictions:
-            top_meter, top_conf = hemistich_preds[0]
-            if top_conf >= confidence_threshold:
-                high_confidence_predictions.append(top_meter)
-
-        if high_confidence_predictions:
-            counter = Counter(high_confidence_predictions)
-            most_common = counter.most_common()[0]
+        if high_conf_meters:
+            counter = Counter(high_conf_meters)
+            winner, votes = counter.most_common()[0]
 
             return {
-                "predicted_meter": most_common[0],
-                "high_confidence_votes": most_common[1],
-                "high_confidence_total": len(high_confidence_predictions),
-                "consensus_ratio": most_common[1] / len(high_confidence_predictions)
-                if high_confidence_predictions
-                else 0,
-                "confidence_threshold": confidence_threshold,
+                "predicted_meter": winner,
+                "votes": votes,
+                "total_qualifying": len(high_conf_meters),
+                "total_hemistichs": len(hemistichs),
+                "consensus_ratio": votes / len(high_conf_meters),
+                "confidence_threshold": conf_threshold,
+                "individual_predictions": [
+                    (h, p[0][0], p[0][1]) for h, p in zip(hemistichs, predictions)
+                ],
             }
         else:
             return {
                 "predicted_meter": None,
-                "message": f"No predictions above {confidence_threshold:.0%} confidence",
-                "confidence_threshold": confidence_threshold,
+                "message": f"No predictions above {conf_threshold:.0%} confidence",
+                "confidence_threshold": conf_threshold,
+                "individual_predictions": [
+                    (h, p[0][0], p[0][1]) for h, p in zip(hemistichs, predictions)
+                ],
             }
 
-    def print_analysis(self, results: dict):
+    def analyze_and_print(
+        self, hemistichs: list[str], conf_threshold: float = 0.95
+    ) -> dict[str, Any]:
+        results = self.analyze_meter(hemistichs, conf_threshold)
+
         print("=" * 64)
-        print("📖 POEM-LEVEL METER ANALYSIS")
+        print("📖 METER ANALYSIS")
         print("=" * 64)
 
-        print(f"\n📝 Analyzing {len(results['hemistichs'])} hemistichs:")
-        for i, hemistich in enumerate(results["hemistichs"], 1):
-            top_pred = results["individual_predictions"][i - 1][0]
+        print("\n📝 Individual predictions:")
+        for i, (hemistich, meter, confidence) in enumerate(
+            results["individual_predictions"], 1
+        ):
+            marker = "✓" if confidence >= conf_threshold else "✗"
             print(f"  {i}. {hemistich}")
-            print(f"     → {top_pred[0]} ({top_pred[1]:.1%})")
+            print(f"     → {meter} ({confidence:.1%}) {marker}")
 
-        print("\n" + "=" * 64)
-        print("📊 ANALYSIS RESULTS")
-        print("=" * 64)
-
-        cons = results["analysis"]["consensus"]
-        print("\n🎯 HIGH-CONFIDENCE CONSENSUS:")
-        if cons["predicted_meter"]:
-            print(f"   Predicted meter: {cons['predicted_meter']}")
+        print(f"\n🎯 Consensus (≥{conf_threshold:.0%} confidence):")
+        if results["predicted_meter"]:
+            print(f"   Predicted meter: {results['predicted_meter']}")
             print(
-                f"   Consensus: {cons['high_confidence_votes']}/{cons['high_confidence_total']} high-conf predictions ({cons['consensus_ratio']:.1%})"
+                f"   Agreement: {results['votes']}/{results['total_qualifying']} qualifying hemistichs ({results['consensus_ratio']:.1%})"
+            )
+            print(
+                f"   Coverage: {results['total_qualifying']}/{results['total_hemistichs']} total hemistichs"
             )
         else:
-            print(f"   {cons['message']}")
+            print(f"   {results['message']}")
+            print("   Consider lowering confidence threshold or checking transcription")
+
+        return results
 
 
 def main():
-    analyzer = PoemMeterAnalyzer()
-
     rumi_hemistichs = [
         "بشنو این نی چون شکایت می‌کند",
         "از جدایی‌ها حکایت می‌کند",
@@ -91,8 +90,8 @@ def main():
         "در نفیرم مرد و زن نالیده‌اند",
     ]
 
-    results = analyzer.analyze_poem(rumi_hemistichs)
-    analyzer.print_analysis(results)
+    analyzer = MeterAnalyzer()
+    analyzer.analyze_and_print(rumi_hemistichs)
 
 
 if __name__ == "__main__":
