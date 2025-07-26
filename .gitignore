@@ -16,4 +16,4 @@ wheels/
 *.jsonl
 *.log
 
-persian-meter-classifier/
+persian-meter-classifier-v*/
