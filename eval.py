@@ -39,7 +39,7 @@ def compute_metrics(eval_pred):
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
 
-model_path = "./persian-meter-classifier-v2"
+model_path = "./persian-meter-classifier-v0.2.0"
 print(f"Loading model from {model_path}...")
 
 model = AutoModelForSequenceClassification.from_pretrained(model_path)

@@ -7,7 +7,7 @@ from infer import PersianMeterClassifier
 class MeterAnalyzer:
     def __init__(
         self,
-        model_path: str = "./persian-meter-classifier",
+        model_path: str = "./persian-meter-classifier-v0.2.0",
         label_map_path: str = "./label_map.json",
     ):
         self.classifier = PersianMeterClassifier(model_path, label_map_path)

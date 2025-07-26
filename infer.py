@@ -7,7 +7,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 class PersianMeterClassifier:
     def __init__(
         self,
-        model_path: str = "./persian-meter-classifier-v2",
+        model_path: str = "./persian-meter-classifier-v0.2.0",
         label_map_path: str = "./label_map.json",
     ):
         print("Loading model and tokenizer...")
