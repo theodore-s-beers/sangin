@@ -79,15 +79,16 @@ def main():
         "ای تیر غمت را دل عشاق نشانه",
     ]
 
-    print("🔍 Classifying hemistichs...\n")
+    print("Classifying hemistichs...\n")
 
     for hemistich in test_hemistichs:
-        print(f"📝 Hemistich: {hemistich}")
+        print(f"Hemistich: {hemistich}")
         predictions = classifier.predict_single(hemistich, top_k=3)
 
-        print("📊 Predictions:")
+        print("Predictions:")
         for i, (meter, confidence) in enumerate(predictions, 1):
-            print(f"  {i}. {meter:<30} ({confidence:.1%})")
+            if confidence > 0.01:
+                print(f"  {i}. ({confidence:.1%}) {meter:<30}")
         print("-" * 64)
 
 

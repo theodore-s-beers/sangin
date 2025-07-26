@@ -1,13 +1,18 @@
+import json
+
 import pandas as pd
 from datasets import Dataset
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers.trainer import Trainer
 
-df = pd.read_csv("saeb_meters.csv")
+with open("label_map.json", "r") as f:
+    label_map = json.load(f)
 
-label_list = sorted(df["meter_name"].unique())
-label_map: dict[str, int] = {label: i for i, label in enumerate(label_list)}
+# Reverse label mapping
+id_to_label = {v: k for k, v in label_map.items()}
+
+df = pd.read_csv("hemistichs.csv")
 df["label"] = df["meter_name"].map(label_map)
 
 subset_df = df[["hemistich", "label"]]
@@ -34,41 +39,26 @@ def compute_metrics(eval_pred):
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
 
-# Evaluate each checkpoint
-checkpoints = ["checkpoint-30000", "checkpoint-35000", "checkpoint-40000"]
+model_path = "./persian-meter-classifier-v2"
+print(f"Loading model from {model_path}...")
 
-print("Evaluating checkpoints...")
-print("=" * 50)
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
-best_accuracy = 0
-best_checkpoint = None
+trainer = Trainer(
+    model=model, eval_dataset=tokenized["test"], compute_metrics=compute_metrics
+)
 
-for checkpoint in checkpoints:
-    print(f"\nEvaluating {checkpoint}...")
+print("Running evaluation...")
+print("=" * 64)
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        f"./results/{checkpoint}"
-    )
+results = trainer.evaluate()
 
-    trainer = Trainer(
-        model=model,
-        eval_dataset=tokenized["test"],
-        compute_metrics=compute_metrics,
-    )
+print("Final model results:")
+print(f"  Accuracy: {results['eval_accuracy']:.4f}")
+print(f"  F1: {results['eval_f1']:.4f}")
+print(f"  Precision: {results['eval_precision']:.4f}")
+print(f"  Recall: {results['eval_recall']:.4f}")
+print(f"  Loss: {results['eval_loss']:.4f}")
 
-    results = trainer.evaluate()
-
-    print(f"Results for {checkpoint}:")
-    print(f"  Accuracy: {results['eval_accuracy']:.4f}")
-    print(f"  F1: {results['eval_f1']:.4f}")
-    print(f"  Loss: {results['eval_loss']:.4f}")
-
-    if results["eval_accuracy"] > best_accuracy:
-        best_accuracy = results["eval_accuracy"]
-        best_checkpoint = checkpoint
-
-print("\n" + "=" * 50)
-print(f"BEST CHECKPOINT: {best_checkpoint}")
-print(f"BEST ACCURACY: {best_accuracy:.4f}")
-print("\nTo resume training from best checkpoint, use:")
-print(f'resume_from_checkpoint="./results/{best_checkpoint}"')
+print("\n" + "=" * 64)
+print("Evaluation complete!")
