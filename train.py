@@ -14,7 +14,7 @@ df = pd.read_csv("hemistichs.csv")
 print(f"Dataset size: {len(df)}")
 print(f"Number of unique meters: {len(df['meter_name'].unique())}")
 print(f"Class distribution:\n{df['meter_name'].value_counts()}")
-print("\n" + "=" * 40 + "\n")
+print("\n" + "=" * 64 + "\n")
 
 # Map meter labels to ints
 label_list = sorted(df["meter_name"].unique())
