@@ -35,7 +35,8 @@ hemistichs:
   Shīrīn_, the _Haft paykar_, and the _Makhzan al-asrār_
 
 More should still be added, but this is a start. The model is already quite good
-at detecting any of the common meters.
+at detecting any of the common meters. Some meters are rare enough that they
+almost never appear in classical Persian poetry, let alone in this training set.
 
 ## Plans
 
