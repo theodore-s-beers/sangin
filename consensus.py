@@ -55,10 +55,10 @@ class MeterAnalyzer:
         results = self.analyze_meter(hemistichs, conf_threshold)
 
         print("=" * 64)
-        print("📖 METER ANALYSIS")
+        print("METER ANALYSIS")
         print("=" * 64)
 
-        print("\n📝 Individual predictions:")
+        print("\nIndividual predictions:")
         for i, (hemistich, meter, confidence) in enumerate(
             results["individual_predictions"], 1
         ):
@@ -66,7 +66,7 @@ class MeterAnalyzer:
             print(f"  {i}. {hemistich}")
             print(f"     → {meter} ({confidence:.1%}) {marker}")
 
-        print(f"\n🎯 Consensus (≥{conf_threshold:.0%} confidence):")
+        print(f"\nConsensus (≥{conf_threshold:.0%} confidence):")
         if results["predicted_meter"]:
             print(f"   Predicted meter: {results['predicted_meter']}")
             print(
