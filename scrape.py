@@ -10,12 +10,12 @@ from requests.exceptions import RequestException
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("masnavi_scraper.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("nezami_scraper.log"), logging.StreamHandler()],
 )
 
 
-class MasnaviScraper:
-    def __init__(self, output_file: str = "masnavi.jsonl", delay: float = 2.0):
+class NezamiScraper:
+    def __init__(self, output_file: str = "nezami_ks.jsonl", delay: float = 2.0):
         self.base_url = "https://api.ganjoor.net/api/ganjoor/poem"
         self.params = {
             "catInfo": "false",
@@ -33,12 +33,12 @@ class MasnaviScraper:
         self.session = requests.Session()
         self.session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (compatible; MasnaviScraper/1.0; Responsible scraping)"
+                "User-Agent": "Mozilla/5.0 (compatible; NezamiScraper/1.0; Responsible scraping)"
             }
         )
 
     def get_poem_url_path(self, poem_number: int) -> str:
-        return f"/moulavi/masnavi/daftar1/sh{poem_number}"
+        return f"/nezami/5ganj/khosro-shirin/sh{poem_number}"
 
     def fetch_poem(self, poem_number: int) -> Optional[dict]:
         url_path = self.get_poem_url_path(poem_number)
@@ -94,7 +94,7 @@ class MasnaviScraper:
 
         return existing
 
-    def scrape_range(self, start: int = 1, end: int = 172, resume: bool = True) -> None:
+    def scrape_range(self, start: int = 1, end: int = 121, resume: bool = True) -> None:
         existing_poems = self.load_existing_poems() if resume else set()
 
         total_poems = end - start + 1
@@ -134,8 +134,8 @@ class MasnaviScraper:
 
 
 def main():
-    scraper = MasnaviScraper()  # Using default parameters
-    scraper.scrape_range(1, 172)
+    scraper = NezamiScraper()  # Using default parameters
+    scraper.scrape_range(1, 121)
 
 
 if __name__ == "__main__":
