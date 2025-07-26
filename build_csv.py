@@ -1,13 +1,15 @@
 import csv
+import glob
 import json
 import re
+from typing import Optional
 
 from hazm import Normalizer
 
 METER_PATTERN = re.compile(r"^(.+?)\s*\((.+?)\)\s*$")
 
 
-def extract_meter_parts(meter_string: str) -> tuple[str, str, str]:
+def extract_meter_parts(meter_string: str) -> Optional[tuple[str, str, str]]:
     match = METER_PATTERN.match(meter_string)
 
     if match:
@@ -25,7 +27,29 @@ def extract_meter_parts(meter_string: str) -> tuple[str, str, str]:
 
         return syllables, meter_name, base_meter
     else:
-        raise ValueError("Meter string is not in the expected format")
+        if meter_string == "مفتعلن مفتعلن مفتعلن فع":
+            syllables = meter_string
+            meter_name = "رجز مطوی"
+            base_meter = "رجز"
+            return syllables, meter_name, base_meter
+
+        if meter_string == "فاعلاتن فاعلن فاعلاتن فاعلن":
+            syllables = meter_string
+            meter_name = "مدید سالم"
+            base_meter = "مدید"
+            return syllables, meter_name, base_meter
+
+        if meter_string == "متفاعلن متفاعلن":
+            syllables = meter_string
+            meter_name = "کامل مربع"
+            base_meter = "کامل"
+            return syllables, meter_name, base_meter
+
+        if meter_string == "مستفعلتن مستفعلتن":
+            return None  # No idea what to call this one
+
+        # I may handle more meters later, but skip for now
+        return None
 
 
 # Many things in this function can throw; I'm not worrying about it
@@ -33,36 +57,56 @@ def main() -> None:
     normalizer = Normalizer()
     seen: set[str] = set()
 
-    with (
-        open("saeb_ghazals.jsonl", "r", encoding="utf-8") as input_file,
-        open("saeb_meters.csv", "w", newline="", encoding="utf-8") as output_file,
-    ):
+    jsonl_files = glob.glob("data/*.jsonl")
+
+    with open("hemistichs.csv", "w", newline="", encoding="utf-8") as output_file:
         writer = csv.writer(output_file)
         writer.writerow(["hemistich", "meter_syllables", "meter_name", "base_meter"])
 
-        for line in input_file:
-            if line.strip():
-                poem = json.loads(line)
+        for jsonl_file in jsonl_files:
+            print(f"Processing {jsonl_file}...")
 
-                # I'm surprised the ghazals can be so long, but I guess so...
-                assert len(poem["verses"]) >= 8  # i.e., 4 bayts
-                assert len(poem["verses"]) <= 102  # i.e., 51 bayts
+            with open(jsonl_file, "r", encoding="utf-8") as input_file:
+                for line in input_file:
+                    if line.strip():
+                        poem = json.loads(line)
 
-                meter_string = poem["sections"][0]["ganjoorMetre"]["rhythm"]
-                syllables, meter_name, base_meter = extract_meter_parts(meter_string)
+                        meter_prop = poem["sections"][0]["ganjoorMetre"]
+                        if meter_prop is None:
+                            print(
+                                f"Skipping poem {poem['fullUrl']} due to missing meter"
+                            )
+                            continue
 
-                for verse in poem["verses"]:
-                    normalized = normalizer.normalize(verse["text"])
+                        meter_string = meter_prop["rhythm"]
 
-                    # There are a lot of repeated hemistichs
-                    # Out of a total 141,203 unique hemistichs, 1,449 are repeated at least once
-                    # I don't have time to dig into this now, but it troubles me
-                    # Let's just skip repeats for the time being
-                    if normalized in seen:
-                        continue
+                        meter_parts = extract_meter_parts(meter_string)
+                        if meter_parts is None:
+                            print(
+                                f"Skipping poem {poem['fullUrl']} due to unsupported meter"
+                            )
+                            continue
 
-                    seen.add(normalized)
-                    writer.writerow([normalized, syllables, meter_name, base_meter])
+                        syllables, meter_name, base_meter = meter_parts
+
+                        for verse in poem["verses"]:
+                            normalized = normalizer.normalize(verse["text"])
+
+                            # There are a lot of repeated hemistichs
+                            # In the divan of Sa'eb alone, out of a total 141,203 unique hemistichs,
+                            # 1,449 are repeated at least once!
+                            # I don't have time to dig into this now, but it troubles me
+                            # Let's just skip repeats for the time being
+                            if normalized in seen:
+                                continue
+
+                            seen.add(normalized)
+                            writer.writerow(
+                                [normalized, syllables, meter_name, base_meter]
+                            )
+
+    print(f"Finished processing {len(jsonl_files)} files")
+    print(f"Total unique hemistichs: {len(seen)}")
 
 
 if __name__ == "__main__":
