@@ -9,7 +9,7 @@ from transformers.training_args import TrainingArguments
 
 # Load data (hemistichs already normalized)
 # Columns: `hemistich`, `meter_syllables`, `meter_name`, `base_meter`
-df = pd.read_csv("saeb_meters.csv")
+df = pd.read_csv("hemistichs.csv")
 
 print(f"Dataset size: {len(df)}")
 print(f"Number of unique meters: {len(df['meter_name'].unique())}")
@@ -54,14 +54,10 @@ training_args = TrainingArguments(
     eval_strategy="epoch",
     save_strategy="epoch",
     learning_rate=2e-5,
-    per_device_train_batch_size=8,
-    num_train_epochs=3,
     weight_decay=0.01,
-    save_total_limit=3,
     load_best_model_at_end=True,
     metric_for_best_model="eval_accuracy",
     greater_is_better=True,
-    resume_from_checkpoint="./results/checkpoint-35000",
 )
 
 
