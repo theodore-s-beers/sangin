@@ -84,7 +84,7 @@ class MeterAnalyzer:
 
 def main():
     hafez_hemistichs: list[str] = []
-    with open("hafez.txt", "r", encoding="utf-8") as f:
+    with open("hafez_demo.txt", "r", encoding="utf-8") as f:
         hafez_hemistichs = [line.strip() for line in f if line.strip()]
 
     if not hafez_hemistichs:
