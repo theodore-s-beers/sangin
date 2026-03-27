@@ -11,8 +11,12 @@ class PersianMeterClassifier:
         label_map_path: str = "./label_map.json",
     ):
         print("Loading model and tokenizer...")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+
         self.model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        self.model.to(self.device)
+        self.model.eval()
 
         with open(label_map_path, "r", encoding="utf-8") as f:
             self.label_map = json.load(f)
@@ -31,16 +35,20 @@ class PersianMeterClassifier:
     def predict(
         self, hemistichs: list[str], top_k: int = 3
     ) -> list[list[tuple[str, float]]]:
+        top_k = min(top_k, len(self.label_map))
+
+        assert self.tokenizer is not None
         inputs = self.tokenizer(
             hemistichs, truncation=True, padding=True, return_tensors="pt"
         )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = self.model(**inputs)
             probabilities = torch.softmax(outputs.logits, dim=-1)
 
         results = []
-        for i, _ in enumerate(hemistichs):
+        for i in range(len(hemistichs)):
             top_probs, top_indices = torch.topk(probabilities[i], top_k)
 
             predictions = []
