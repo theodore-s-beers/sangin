@@ -36,6 +36,7 @@ dataset = dataset.train_test_split(test_size=0.1, seed=42)
 # Tokenizer & model
 model_name = "FacebookAI/xlm-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+assert tokenizer is not None
 model = AutoModelForSequenceClassification.from_pretrained(
     model_name, num_labels=len(label_list)
 )
@@ -43,6 +44,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 # Tokenize
 def tokenize(examples):
+    assert tokenizer is not None
     return tokenizer(examples["hemistich"], truncation=True, padding="max_length")
 
 

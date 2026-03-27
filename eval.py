@@ -23,6 +23,7 @@ tokenizer = AutoTokenizer.from_pretrained("FacebookAI/xlm-roberta-base")
 
 
 def tokenize(examples):
+    assert tokenizer is not None
     return tokenizer(examples["hemistich"], truncation=True, padding="max_length")
 
 
