@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers.trainer import Trainer
 
-with open("label_map.json", "r") as f:
+with open("label_map.json", "r", encoding="utf-8") as f:
     label_map = json.load(f)
 
 # Reverse label mapping
@@ -17,13 +17,15 @@ df["label"] = df["meter_name"].map(label_map)
 
 subset_df = df[["hemistich", "label"]]
 dataset = Dataset.from_pandas(subset_df)
-dataset = dataset.train_test_split(test_size=0.1)
+dataset = dataset.train_test_split(test_size=0.1, seed=42)  # Use fixed seed
 
-tokenizer = AutoTokenizer.from_pretrained("FacebookAI/xlm-roberta-base")
+model_path = "./persian-meter-classifier-v0.2.0"
+
+tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 
 def tokenize(examples):
-    assert tokenizer is not None
+    assert tokenizer is not None  # Placate type checker
     return tokenizer(examples["hemistich"], truncation=True, padding="max_length")
 
 
@@ -40,9 +42,7 @@ def compute_metrics(eval_pred):
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
 
-model_path = "./persian-meter-classifier-v0.2.0"
 print(f"Loading model from {model_path}...")
-
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
 trainer = Trainer(
