@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import torch
 from datasets import Dataset
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -23,22 +24,24 @@ print(f"Labels: {list(label_map.keys())[:5]}...")  # Show first 5
 df["label"] = df["meter_name"].map(label_map)
 
 # Save label mapping
-with open("label_map.json", "w") as f:
+with open("label_map.json", "w", encoding="utf-8") as f:
     json.dump(label_map, f, ensure_ascii=False, indent=2)
 print("Label mapping saved to label_map.json")
 
 # HuggingFace Dataset
-subset_df = df[["hemistich", "label"]]
-assert isinstance(subset_df, pd.DataFrame)  # To placate Pyright
-dataset = Dataset.from_pandas(subset_df)
+dataset = Dataset.from_pandas(df[["hemistich", "label"]])
 dataset = dataset.train_test_split(test_size=0.1, seed=42)
 
 # Tokenizer & model
 model_name = "FacebookAI/xlm-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 assert tokenizer is not None
+
+id2label = {i: label for label, i in label_map.items()}
+label2id = label_map
+
 model = AutoModelForSequenceClassification.from_pretrained(
-    model_name, num_labels=len(label_list)
+    model_name, num_labels=len(label_list), id2label=id2label, label2id=label2id
 )
 
 
@@ -55,11 +58,18 @@ training_args = TrainingArguments(
     output_dir="./results",
     eval_strategy="epoch",
     save_strategy="epoch",
+    logging_strategy="epoch",
     learning_rate=2e-5,
     weight_decay=0.01,
+    num_train_epochs=3,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
     load_best_model_at_end=True,
     metric_for_best_model="eval_accuracy",
     greater_is_better=True,
+    save_total_limit=2,
+    fp16=torch.cuda.is_available(),
+    report_to="none",
 )
 
 
