@@ -35,7 +35,7 @@ dataset = dataset.train_test_split(test_size=0.1, seed=42)
 # Tokenizer & model
 model_name = "FacebookAI/xlm-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-assert tokenizer is not None
+assert tokenizer is not None  # Placate type checker
 
 id2label = {i: label for label, i in label_map.items()}
 label2id = label_map
@@ -47,12 +47,13 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 # Tokenize
 def tokenize(examples):
-    assert tokenizer is not None
+    assert tokenizer is not None  # Placate type checker
     return tokenizer(examples["hemistich"], truncation=True, padding="max_length")
 
 
 tokenized = dataset.map(tokenize, batched=True)
 
+# See if we can use GPU (sure hope so) and which precision to use
 use_cuda = torch.cuda.is_available()
 use_bf16 = use_cuda and torch.cuda.is_bf16_supported()
 use_fp16 = use_cuda and not use_bf16
@@ -61,20 +62,15 @@ training_args = TrainingArguments(
     output_dir="./results",
     eval_strategy="epoch",
     save_strategy="epoch",
-    logging_strategy="steps",
-    logging_steps=100,
     learning_rate=2e-5,
     weight_decay=0.01,
-    num_train_epochs=3,
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=32,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
     load_best_model_at_end=True,
     metric_for_best_model="eval_accuracy",
-    greater_is_better=True,
-    save_total_limit=2,
+    save_total_limit=3,
     bf16=use_bf16,
     fp16=use_fp16,
-    report_to="none",
 )
 
 
